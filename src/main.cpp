@@ -41,9 +41,9 @@ void MainDiagnosticsCounterExpOnExecute(const tMenu::tInfo *info)
 static int diagnosticsCounter = 0;
 const tMenu::tItem menuDiagnosticsItems[] = {
     {"Counter",  MainDiagnosticsCounterOnExecute, MainDiagnosticsCounterOnDraw, &diagnosticsCounter},
-    {"Counter Exp",  MainDiagnosticsCounterExpOnExecute, NULL, &diagnosticsCounter},
-    {"Inputs",  tMenu::OnExecuteSubMenu, NULL, (void*)&menuInputs},
-    {NULL}
+    {"Counter Exp",  MainDiagnosticsCounterExpOnExecute, nullptr, &diagnosticsCounter},
+    {"Inputs",  tMenu::OnExecuteSubMenu, nullptr, reinterpret_cast<void*>(&menuInputs)},
+    {nullptr}
 };
 
 tMenu::tSub menuDiagnostics = {
@@ -75,18 +75,18 @@ void MenuMainVersionOnDraw(const tMenu::tInfo *info)
 }
 
 const tMenu::tItem menuMainItems[] = {
-    {"Date",  NULL, MenuMainDateOnDraw, NULL},
-    {"Time",  NULL, MenuMainTimeOnDraw, NULL},
-    {"Diagnostics",  tMenu::OnExecuteSubMenu, NULL, (void*)&menuDiagnostics},
-    {"Version", NULL, MenuMainVersionOnDraw, NULL},
-    {NULL}
+    {"Date",  nullptr, MenuMainDateOnDraw, nullptr},
+    {"Time",  nullptr, MenuMainTimeOnDraw, nullptr},
+    {"Diagnostics",  tMenu::OnExecuteSubMenu, nullptr, (void*)&menuDiagnostics},
+    {"Version", nullptr, MenuMainVersionOnDraw, nullptr},
+    {nullptr}
 };
 
 tMenu::tSub menuMain = {
     "Main",
     menuMainItems,
     0,
-    NULL
+    nullptr
 };
 
 
@@ -175,8 +175,8 @@ int main()
         menuInputsItems[i].name = "";
         menuInputsItems[i].onDraw = InputsInputOnDraw;
     }
-    // Don't forget to add the final "NULL" item.
-    menuInputsItems[MENU_INPUTS_COUNT].name = NULL;
+    // Don't forget to add the final "nullptr" item.
+    menuInputsItems[MENU_INPUTS_COUNT].name = nullptr;
 
     tMenuActual menu;
     // Call update once so that it draws the first time.
