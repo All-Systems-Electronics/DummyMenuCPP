@@ -9,16 +9,16 @@
 
 static void set_mode(int want_key)
 {
-	static struct termios old, new;
+	static struct termios oldData, newData;
 	if (!want_key) {
-		tcsetattr(STDIN_FILENO, TCSANOW, &old);
+		tcsetattr(STDIN_FILENO, TCSANOW, &oldData);
 		return;
 	}
  
-	tcgetattr(STDIN_FILENO, &old);
-	new = old;
-	new.c_lflag &= ~(ICANON | ECHO);
-	tcsetattr(STDIN_FILENO, TCSANOW, &new);
+	tcgetattr(STDIN_FILENO, &oldData);
+	newData = oldData;
+	newData.c_lflag &= ~(ICANON | ECHO);
+	tcsetattr(STDIN_FILENO, TCSANOW, &newData);
 }
  
 static int get_key()

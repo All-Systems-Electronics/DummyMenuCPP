@@ -1,7 +1,7 @@
 #include "menu.h"
 #include "stddef.h"
 
-void MenuOnExecuteSubMenu(){}
+void MenuOnExecuteSubMenu(const tMenuInfo *){}
 
 
 void MenuInit(tCurrentMenu *currentMenu, tMenu *menu)

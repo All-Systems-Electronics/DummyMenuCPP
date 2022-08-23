@@ -60,7 +60,7 @@ extern "C"
 
     // Place this function in the "onExecute" callback, and the address of the target menu in the data pointer,
     // to navigate to a submenu.
-    void MenuOnExecuteSubMenu();
+    void MenuOnExecuteSubMenu(const tMenuInfo *);
 
     void MenuInit(tCurrentMenu *currentMenu, tMenu *menu);
     void MenuUpdate(tCurrentMenu *currentMenu, eButton buttonPress);
