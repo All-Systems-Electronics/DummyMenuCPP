@@ -6,52 +6,52 @@
 #include "menu.h"
 #include "key.h"
 
-const char* VersionString = "0.2.0";
+const char* VersionString = "0.5.0";
 
-void InputsInputOnDraw(const tMenuInfo *info)
+void InputsInputOnDraw(const tMenu::tInfo *info)
 {
     printf("Input %d", info->index+1);
 }
 
 #define MENU_INPUTS_COUNT (8)
-tMenuItem menuInputsItems[MENU_INPUTS_COUNT+1];
+tMenu::tItem menuInputsItems[MENU_INPUTS_COUNT+1];
 
-tMenu menuInputs = {
+tMenu::tSub menuInputs = {
     "Inputs",
     menuInputsItems
 };
 
-void MainDiagnosticsCounterOnExecute(const tMenuInfo *info)
+void MainDiagnosticsCounterOnExecute(const tMenu::tInfo *info)
 {
     int *counter = (int*)info->data;
     ++*counter;
 }
 
-void MainDiagnosticsCounterOnDraw(const tMenuInfo *info)
+void MainDiagnosticsCounterOnDraw(const tMenu::tInfo *info)
 {
     int *counter = (int*)info->data;
     printf("%d", *counter);
 }
-void MainDiagnosticsCounterExpOnExecute(const tMenuInfo *info)
+void MainDiagnosticsCounterExpOnExecute(const tMenu::tInfo *info)
 {
     int *counter = (int*)info->data;
     *counter *= *counter;
 }
 
 static int diagnosticsCounter = 0;
-const tMenuItem menuDiagnosticsItems[] = {
+const tMenu::tItem menuDiagnosticsItems[] = {
     {"Counter",  MainDiagnosticsCounterOnExecute, MainDiagnosticsCounterOnDraw, &diagnosticsCounter},
     {"Counter Exp",  MainDiagnosticsCounterExpOnExecute, NULL, &diagnosticsCounter},
-    {"Inputs",  MenuOnExecuteSubMenu, NULL, (void*)&menuInputs},
+    {"Inputs",  tMenu::OnExecuteSubMenu, NULL, (void*)&menuInputs},
     {NULL}
 };
 
-tMenu menuDiagnostics = {
+tMenu::tSub menuDiagnostics = {
     "Diagnostics",
     menuDiagnosticsItems
 };
 
-void MenuMainDateOnDraw(const tMenuInfo *info)
+void MenuMainDateOnDraw(const tMenu::tInfo *info)
 {
     time_t rawTime;
     time(&rawTime);
@@ -60,7 +60,7 @@ void MenuMainDateOnDraw(const tMenuInfo *info)
     printf("%s", tempString);
 }
 
-void MenuMainTimeOnDraw(const tMenuInfo *info)
+void MenuMainTimeOnDraw(const tMenu::tInfo *info)
 {
     time_t rawTime;
     time(&rawTime);
@@ -69,51 +69,102 @@ void MenuMainTimeOnDraw(const tMenuInfo *info)
     printf("%s", tempString);
 }
 
-void MenuMainVersionOnDraw(const tMenuInfo *info)
+void MenuMainVersionOnDraw(const tMenu::tInfo *info)
 {
     printf("%s", VersionString);
 }
 
-const tMenuItem menuMainItems[] = {
+const tMenu::tItem menuMainItems[] = {
     {"Date",  NULL, MenuMainDateOnDraw, NULL},
     {"Time",  NULL, MenuMainTimeOnDraw, NULL},
-    {"Diagnostics",  MenuOnExecuteSubMenu, NULL, (void*)&menuDiagnostics},
+    {"Diagnostics",  tMenu::OnExecuteSubMenu, NULL, (void*)&menuDiagnostics},
     {"Version", NULL, MenuMainVersionOnDraw, NULL},
     {NULL}
 };
 
-tMenu menuMain = {
+tMenu::tSub menuMain = {
     "Main",
     menuMainItems,
     0,
     NULL
 };
 
-void MenuControlCode(eMenuControlCode code)
-{
-    switch (code) {
-    case eMCC_ClearScreen:
-        printf("\033[H\033[J");
-        break;
-    case eMCC_FinishedDrawingItem:
-        printf("\n");
-        break;
-    case eMCC_DrawingSelectedItem:
-        printf("-> ");
-        break;
-    case eMCC_DrawingItem:
-        printf("   ");
-        break;
-    case eMCC_CallingOnDraw:
-        printf(" ");
-        break;
-    }
-}
 
-void MenuDrawString(const char *str)
-{
-    printf("%s", str);
-}
+class tMenuActual : public tMenu {
+public:
+    tMenuActual() :
+        tMenu(&menuMain)
+    {
+	    KeyStartScanMode();
+        ControlCode(eControlCode::ClearScreen);
+    }
+    ~tMenuActual() override
+    {
+	    KeyStopScanMode();
+    }
+    bool HasExited() const
+    {
+        return quit_;
+    }
+    void Update()
+    {
+        int inputChar = KeyGetChar();
+        eButton buttonPress = eButton::None;
+        if (inputChar > 0) {
+            switch ((char)inputChar) {
+                case 'w':
+                    buttonPress = eButton::Up;
+                    break;
+                case 's':
+                    buttonPress = eButton::Down;
+                    break;
+                case 'a':
+                    buttonPress = eButton::Left;
+                    break;
+                case 'd':
+                    buttonPress = eButton::Right;
+                    break;
+                case 'q':
+                    quit_ = true;
+                    break;
+                default:
+                    break;
+            }
+        }
+        tMenu::Update(buttonPress);
+        if (ExitAttempted()) {
+            quit_ = true;
+        }
+    }
+protected:
+    void DrawString(const char *str) final
+    {
+        printf("%s", str);
+    }
+
+    void ControlCode(eControlCode code) final
+    {
+        switch (code) {
+        case eControlCode::ClearScreen:
+            printf("\033[H\033[J");
+            break;
+        case eControlCode::FinishedDrawingItem:
+            printf("\n");
+            break;
+        case eControlCode::DrawingSelectedItem:
+            printf("-> ");
+            break;
+        case eControlCode::DrawingItem:
+            printf("   ");
+            break;
+        case eControlCode::CallingOnDraw:
+            printf(" ");
+            break;
+        }
+    }
+private:
+    bool quit_{};
+};
 
 int main()
 {
@@ -127,42 +178,16 @@ int main()
     // Don't forget to add the final "NULL" item.
     menuInputsItems[MENU_INPUTS_COUNT].name = NULL;
 
-    // Initialise the menu with the top level menu.
-    tCurrentMenu currentMenu;
-    MenuInit(&currentMenu, &menuMain);
+    tMenuActual menu;
     // Call update once so that it draws the first time.
-    MenuUpdate(&currentMenu, eButtonNone);
+    menu.Update();
 
     bool quit = false;
-	KeyStartScanMode();
     do {
-        int inputChar = KeyGetChar();
-        eButton buttonPress = eButtonNone;
-        if (inputChar > 0) {
-            switch ((char)inputChar) {
-                case 'w':
-                    buttonPress = eButtonUp;
-                    break;
-                case 's':
-                    buttonPress = eButtonDown;
-                    break;
-                case 'a':
-                    buttonPress = eButtonLeft;
-                    break;
-                case 'd':
-                    buttonPress = eButtonRight;
-                    break;
-                case 'q':
-                    quit = true;
-                    break;
-                default:
-                    break;
-            }
-        }
+        menu.Update();
+        quit = menu.HasExited();
 
-        MenuUpdate(&currentMenu, buttonPress);
-
-        if (!currentMenu.menu) {
+        if (quit) {
             printf ("Exiting Menu\n");
             break;
         }
@@ -171,7 +196,6 @@ int main()
         }
     } while (!quit);
 
-	KeyStopScanMode();
     printf ("\nExiting Program\n");
 
     return 0;

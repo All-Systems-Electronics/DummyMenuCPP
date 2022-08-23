@@ -1,33 +1,31 @@
 #include "menu.h"
 #include "stddef.h"
 
-void MenuOnExecuteSubMenu(const tMenuInfo *){}
-
-
-void MenuInit(tCurrentMenu *currentMenu, tMenu *menu)
+tMenu::tMenu(tSub* topMenu):
+    currentSub_(topMenu)
 {
-    menu->index = 0;
-    menu->previous = NULL;
-    currentMenu->menu = menu;
-    MenuControlCode(eMCC_ClearScreen);
+    currentSub_->index = 0;
+    currentSub_->previous = nullptr;
+}
+
+tMenu::~tMenu()
+{
+    
 }
 
 // Handles the drawing, navigating and updating of the menu.
-static void MenuNavigate(tCurrentMenu *currentMenu, eButton buttonPress)
+void tMenu::Navigate(eButton buttonPress)
 {
-    // Make sure sensible values have been passed into the function.
-    if (!currentMenu) {
-        return;
-    }
-    if (!currentMenu->menu) {
+    if (!currentSub_) {
         return;
     }
 
-    tMenu *menu = currentMenu->menu;
+    auto* menu = currentSub_;
+    exitAttempted_ = false;
 
     // Handle the navigation of the menu first, so that we update the menu before we draw it.
     switch (buttonPress) {
-        case eButtonUp:
+        case eButton::Up:
             if (menu->index > 0) {
                 --menu->index;
             }
@@ -39,7 +37,7 @@ static void MenuNavigate(tCurrentMenu *currentMenu, eButton buttonPress)
                 }
             }
             break;
-        case eButtonDown:
+        case eButton::Down:
             if (menu->items[menu->index].name && menu->items[menu->index + 1].name) {
                 ++menu->index;
             }
@@ -47,22 +45,27 @@ static void MenuNavigate(tCurrentMenu *currentMenu, eButton buttonPress)
                 menu->index = 0;
             }
             break;
-        case eButtonLeft:
-            currentMenu->menu = menu->previous;
+        case eButton::Left:
+            if (menu->previous) {
+                currentSub_ = menu->previous;
+            }
+            else {
+                exitAttempted_ = true;
+            }
             break;
-        case eButtonRight:
+        case eButton::Right:
             {
-                const tMenuItem *item = &menu->items[menu->index];
-                if (item->onExecute == MenuOnExecuteSubMenu) {
+                const tItem *item = &menu->items[menu->index];
+                if (item->onExecute == OnExecuteSubMenu) {
                     if (item->data) {
-                        tMenu *subMenu = (tMenu*)item->data;
-                        subMenu->previous = currentMenu->menu;
+                        tSub *subMenu = (tSub*)item->data;
+                        subMenu->previous = currentSub_;
                         subMenu->index = 0;
-                        currentMenu->menu = subMenu;
+                        currentSub_ = subMenu;
                     }
                 }
                 else if (item->onExecute) {
-                    tMenuInfo menuInfo = {
+                    tInfo menuInfo = {
                         .menu = menu,
                         .item = item,
                         .data = item->data,
@@ -77,7 +80,7 @@ static void MenuNavigate(tCurrentMenu *currentMenu, eButton buttonPress)
     }
 }
 
-static void MenuDraw(const tMenu *menu)
+void tMenu::Draw(const tSub *menu)
 {
     // Make sure sensible values have been passed into the function.
     if (!menu) {
@@ -85,25 +88,25 @@ static void MenuDraw(const tMenu *menu)
     }
 
     if (menu->name) {
-        MenuDrawString(menu->name);
-        MenuControlCode(eMCC_FinishedDrawingItem);
+        DrawString(menu->name);
+        ControlCode(eControlCode::FinishedDrawingItem);
     }
 
     int i = 0;
     while (menu->items[i].name != NULL) {
-        const tMenuItem *item = &menu->items[i];
+        const tItem *item = &menu->items[i];
         if (i == menu->index) {
-            MenuControlCode(eMCC_DrawingSelectedItem);
+            ControlCode(eControlCode::DrawingSelectedItem);
         }
         else {
-            MenuControlCode(eMCC_DrawingItem);
+            ControlCode(eControlCode::DrawingItem);
         }
-        MenuDrawString(item->name);
+        DrawString(item->name);
 
         if (item->onDraw) {
-            MenuControlCode(eMCC_CallingOnDraw);
+            ControlCode(eControlCode::CallingOnDraw);
             
-            tMenuInfo menuInfo = {
+            tInfo menuInfo = {
                 .menu = menu,
                 .item = item,
                 .data = item->data,
@@ -112,18 +115,18 @@ static void MenuDraw(const tMenu *menu)
             item->onDraw(&menuInfo);
         }
 
-        MenuControlCode(eMCC_FinishedDrawingItem);
+        ControlCode(eControlCode::FinishedDrawingItem);
         ++i;
     } 
 }
 
 
-void MenuUpdate(tCurrentMenu *currentMenu, eButton buttonPress)
+void tMenu::Update(eButton buttonPress)
 {
-    MenuNavigate(currentMenu, buttonPress);
+    Navigate(buttonPress);
 
-    MenuControlCode(eMCC_ClearScreen);
-    if (currentMenu->menu) {
-        MenuDraw(currentMenu->menu);
+    ControlCode(eControlCode::ClearScreen);
+    if (currentSub_) {
+        Draw(currentSub_);
     }
 }
