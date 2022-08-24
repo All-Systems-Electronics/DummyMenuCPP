@@ -89,9 +89,19 @@ protected:
     virtual void ControlCode(eControlCode) = 0;
     // DrawString may be called multiple times to draw each line of the menu.
     virtual void DrawString(const char*) = 0;
+    virtual uint64_t TimeMS() const
+    {
+        return 0;
+    }
+    virtual uint64_t UpdatePeriodMS() const
+    {
+        return 0;
+    } 
 private:
+    uint64_t lastMS_ {};
     tSub* currentSub_ {};
     bool exitAttempted_ {};
+    bool refreshRequested_ {true};
 
     void Navigate(eButton buttonPress);
     void Draw(const tSub *menu);
@@ -139,6 +149,10 @@ inline void tMenu::Navigate(eButton buttonPress)
 {
     if (!currentSub_) {
         return;
+    }
+
+    if (buttonPress != eButton::None) {
+        refreshRequested_ = true;
     }
 
     auto* menu = currentSub_;
@@ -241,13 +255,22 @@ inline void tMenu::Draw(const tSub *menu)
     } 
 }
 
-
 inline void tMenu::Update(eButton buttonPress)
 {
+    const auto currentMS = TimeMS();
+    const auto updateMS = UpdatePeriodMS();
+    if (updateMS > 0) {
+        if ((currentMS - lastMS_) >= updateMS) {
+            lastMS_ = currentMS;
+            refreshRequested_ = true;
+        }
+    }
+
     Navigate(buttonPress);
 
-    ControlCode(eControlCode::ClearScreen);
-    if (currentSub_) {
+    if (refreshRequested_ && currentSub_) {
+        ControlCode(eControlCode::ClearScreen);
+        refreshRequested_ = false;
         Draw(currentSub_);
     }
 }

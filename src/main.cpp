@@ -5,8 +5,9 @@
 #include <time.h>
 #include "menu.h"
 #include "key.h"
+#include <chrono>
 
-const char* VersionString = "0.5.0";
+const char* VersionString = "0.5.1";
 
 void InputsInputOnDraw(const tMenu::tInfo& info)
 {
@@ -153,6 +154,17 @@ protected:
             break;
         }
     }
+    uint64_t TimeMS() const final
+    {
+        using namespace std::chrono;
+        return static_cast<uint64_t>(duration_cast< milliseconds >(
+            system_clock::now().time_since_epoch()
+        ).count());
+    }
+    uint64_t UpdatePeriodMS() const final
+    {
+        return 1000;
+    } 
 private:
     bool quit_{};
 };
