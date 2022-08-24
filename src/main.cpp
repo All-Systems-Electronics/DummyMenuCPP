@@ -8,39 +8,34 @@
 
 const char* VersionString = "0.5.0";
 
-void InputsInputOnDraw(const tMenu::tInfo *info)
+void InputsInputOnDraw(const tMenu::tInfo& info)
 {
-    printf("Input %d", info->index+1);
+    printf("Input %d", info.index+1);
 }
 
-#define MENU_INPUTS_COUNT (8)
-tMenu::tItem menuInputsItems[MENU_INPUTS_COUNT+1];
+static auto menuInputsItems = MakeMenuItemsEmpty<9>();
+static auto menuInputs = tMenu::MakeSubMenu("Inputs", menuInputsItems.data());
 
-tMenu::tSub menuInputs = {
-    "Inputs",
-    menuInputsItems
-};
-
-void MainDiagnosticsCounterOnExecute(const tMenu::tInfo *info)
+void MainDiagnosticsCounterOnExecute(const tMenu::tInfo& info)
 {
-    int *counter = (int*)info->data;
+    int *counter = (int*)info.data;
     ++*counter;
 }
 
-void MainDiagnosticsCounterOnDraw(const tMenu::tInfo *info)
+void MainDiagnosticsCounterOnDraw(const tMenu::tInfo& info)
 {
-    int *counter = (int*)info->data;
+    int *counter = (int*)info.data;
     printf("%d", *counter);
 }
-void MainDiagnosticsCounterExpOnExecute(const tMenu::tInfo *info)
+void MainDiagnosticsCounterExpOnExecute(const tMenu::tInfo& info)
 {
-    int *counter = (int*)info->data;
+    int *counter = (int*)info.data;
     *counter *= *counter;
 }
 
 static int diagnosticsCounter = 0;
 
-tSubContainer menuDiagnostics("Diagnostics",
+static constexpr auto menuDiagnosticsItems = MakeMenuItems(
 {
     {"Counter",  MainDiagnosticsCounterOnExecute, MainDiagnosticsCounterOnDraw, &diagnosticsCounter},
     {"Counter Exp",  MainDiagnosticsCounterExpOnExecute, nullptr, &diagnosticsCounter},
@@ -48,7 +43,9 @@ tSubContainer menuDiagnostics("Diagnostics",
     {nullptr}
 });
 
-void MenuMainDateOnDraw(const tMenu::tInfo *info)
+static auto menuDiagnostics = tMenu::MakeSubMenu("Diagnostics", menuDiagnosticsItems.data());
+
+void MenuMainDateOnDraw(const tMenu::tInfo& info)
 {
     time_t rawTime;
     time(&rawTime);
@@ -57,7 +54,7 @@ void MenuMainDateOnDraw(const tMenu::tInfo *info)
     printf("%s", tempString);
 }
 
-void MenuMainTimeOnDraw(const tMenu::tInfo *info)
+void MenuMainTimeOnDraw(const tMenu::tInfo& info)
 {
     time_t rawTime;
     time(&rawTime);
@@ -66,26 +63,20 @@ void MenuMainTimeOnDraw(const tMenu::tInfo *info)
     printf("%s", tempString);
 }
 
-void MenuMainVersionOnDraw(const tMenu::tInfo *info)
+void MenuMainVersionOnDraw(const tMenu::tInfo& info)
 {
     printf("%s", VersionString);
 }
 
-const tMenu::tItem menuMainItems[] = {
+static constexpr auto menuMainItems = MakeMenuItems({
     {"Date",  nullptr, MenuMainDateOnDraw, nullptr},
     {"Time",  nullptr, MenuMainTimeOnDraw, nullptr},
-    {"Diagnostics",  tMenu::OnExecuteSubMenu, nullptr, (void*)&menuDiagnostics.sub},
+    {"Diagnostics",  tMenu::OnExecuteSubMenu, nullptr, (void*)&menuDiagnostics},
     {"Version", nullptr, MenuMainVersionOnDraw, nullptr},
     {nullptr}
-};
+});
 
-tMenu::tSub menuMain = {
-    "Main",
-    menuMainItems,
-    0,
-    nullptr
-};
-
+static auto menuMain = tMenu::MakeSubMenu("Main", menuMainItems.data());
 
 class tMenuActual : public tMenu {
 public:
@@ -168,12 +159,12 @@ int main()
     printf ("----- Darren's Dummy Menu Version %s -----\n\n", VersionString);
 
     // Dynamically create the items for the Inputs menu.
-    for (int i = 0; i < MENU_INPUTS_COUNT; ++i) {
+    for (int i = 0; i < menuInputsItems.size() - 1; ++i) {
         menuInputsItems[i].name = "";
         menuInputsItems[i].onDraw = InputsInputOnDraw;
     }
     // Don't forget to add the final "nullptr" item.
-    menuInputsItems[MENU_INPUTS_COUNT].name = nullptr;
+    menuInputsItems.back().name = nullptr;
 
     tMenuActual menu;
     // Call update once so that it draws the first time.

@@ -19,7 +19,7 @@ public:
 
     // Place this function in the "onExecute" callback, and the address of the target menu in the data pointer,
     // to navigate to a submenu.
-    static void OnExecuteSubMenu(const tInfo *) {}
+    static void OnExecuteSubMenu(const tInfo&) {}
 
     // The actual menu item.
     // Holds the name of the item, and function pointers for when the item is displayed
@@ -28,8 +28,8 @@ public:
     // functions.
     struct tItem{
         const char *name;
-        void (*onExecute)(const tInfo *menuInfo);
-        void (*onDraw)(const tInfo *menuInfo);
+        void (*onExecute)(const tInfo& menuInfo);
+        void (*onDraw)(const tInfo& menuInfo);
         void *data;
     };
 
@@ -40,12 +40,23 @@ public:
     // Notice that the addition of the "previous" pointer makes our menu
     // act a bit like a linked list, so we can dynamically move up and down in
     // the menu structure.
-    struct tSub{
-        const char *name;   // Leave this NULL to skip drawing the menu name.
-        const tItem *items;
-        int index;
-        struct tSub *previous;
+    class tSub{
+    private:
+    friend class tMenu;
+        tSub(const char* name, const tItem *items):
+            name(name),
+            items(items)
+        {
+        }
+        const char *name {};   // Leave this NULL to skip drawing the menu name.
+        const tItem *items {};
+        int index {};
+        struct tSub *previous {};
     };
+    static tSub MakeSubMenu(const char* name, const tItem *items)
+    {
+        return tSub(name, items);
+    }
 
     // An enumeration for separating menu button presses from the actual key strokes used
     // to navigate the menu.
@@ -107,27 +118,6 @@ constexpr std::array<std::remove_cv_t<const tMenu::tItem>, N> MakeMenuItemsEmpty
         {nullptr,	nullptr,	nullptr,	nullptr},
     });
 }
-
-template <std::size_t N>
-struct tSubContainer {
-    constexpr tSubContainer(const char* title, const tMenu::tItem (&&a)[N]):
-        sub({title, nullptr}),
-        menuItems(std::experimental::__to_array(std::move(a), std::make_index_sequence<N>{}))
-    {
-        sub.items = menuItems.data();
-    }
-    tMenu::tSub sub;
-    const std::array<std::remove_cv_t<const tMenu::tItem>, N> menuItems;
-};
-
-// template <std::size_t N>
-// constexpr tSubContainer<N> MakeMenu(const char* title, const tMenu::tItem (&&a)[N])
-// {
-//     return tSubContainer<N> (
-//         title,
-//         a
-//     );
-// }
 
 inline tMenu::tMenu(tSub* topMenu):
     currentSub_(topMenu)
@@ -199,7 +189,7 @@ inline void tMenu::Navigate(eButton buttonPress)
                         .data = item->data,
                         .index = menu->index
                     };
-                    item->onExecute(&menuInfo);
+                    item->onExecute(menuInfo);
                 }
                 break;
             }
@@ -240,7 +230,7 @@ inline void tMenu::Draw(const tSub *menu)
                 .data = item->data,
                 .index = i
             };
-            item->onDraw(&menuInfo);
+            item->onDraw(menuInfo);
         }
 
         ControlCode(eControlCode::FinishedDrawingItem);
