@@ -13,7 +13,11 @@ void InputsInputOnDraw(const tMenu::tInfo& info)
     printf("Input %d", info.index+1);
 }
 
+#if (__cplusplus >= 201703L)
 static auto menuInputsItems = MakeMenuItemsEmpty<9>();
+#else
+static std::array<tMenu::tItem, 9> menuInputsItems;
+#endif
 static auto menuInputs = tMenu::MakeSubMenu("Inputs", menuInputsItems.data());
 
 void MainDiagnosticsCounterOnExecute(const tMenu::tInfo& info)
@@ -35,15 +39,14 @@ void MainDiagnosticsCounterExpOnExecute(const tMenu::tInfo& info)
 
 static int diagnosticsCounter = 0;
 
-static constexpr auto menuDiagnosticsItems = MakeMenuItems(
-{
+static constexpr tMenu::tItem menuDiagnosticsItems[] {
     {"Counter",  MainDiagnosticsCounterOnExecute, MainDiagnosticsCounterOnDraw, &diagnosticsCounter},
     {"Counter Exp",  MainDiagnosticsCounterExpOnExecute, nullptr, &diagnosticsCounter},
     {"Inputs",  tMenu::OnExecuteSubMenu, nullptr, static_cast<void*>(&menuInputs)},
     {nullptr}
-});
+};
 
-static auto menuDiagnostics = tMenu::MakeSubMenu("Diagnostics", menuDiagnosticsItems.data());
+static auto menuDiagnostics = tMenu::MakeSubMenu("Diagnostics", menuDiagnosticsItems);
 
 void MenuMainDateOnDraw(const tMenu::tInfo& info)
 {
@@ -68,15 +71,15 @@ void MenuMainVersionOnDraw(const tMenu::tInfo& info)
     printf("%s", VersionString);
 }
 
-static constexpr auto menuMainItems = MakeMenuItems({
+static constexpr tMenu::tItem menuMainItems[] {
     {"Date",  nullptr, MenuMainDateOnDraw, nullptr},
     {"Time",  nullptr, MenuMainTimeOnDraw, nullptr},
     {"Diagnostics",  tMenu::OnExecuteSubMenu, nullptr, (void*)&menuDiagnostics},
     {"Version", nullptr, MenuMainVersionOnDraw, nullptr},
     {nullptr}
-});
+};
 
-static auto menuMain = tMenu::MakeSubMenu("Main", menuMainItems.data());
+static auto menuMain = tMenu::MakeSubMenu("Main", menuMainItems);
 
 class tMenuActual : public tMenu {
 public:

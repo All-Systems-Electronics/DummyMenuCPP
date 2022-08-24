@@ -3,7 +3,6 @@
 #include <cstddef>
 #include <array>
 #include <experimental/array>
-#include <typeinfo>
 
 class tMenu {
 public:
@@ -17,6 +16,8 @@ public:
         int index;
     };
 
+    using fCallback = void (const tInfo& menuInfo);
+
     // Place this function in the "onExecute" callback, and the address of the target menu in the data pointer,
     // to navigate to a submenu.
     static void OnExecuteSubMenu(const tInfo&) {}
@@ -28,8 +29,8 @@ public:
     // functions.
     struct tItem{
         const char *name;
-        void (*onExecute)(const tInfo& menuInfo);
-        void (*onDraw)(const tInfo& menuInfo);
+        fCallback* onExecute;
+        fCallback* onDraw;
         void *data;
     };
 
@@ -96,6 +97,7 @@ private:
     void Draw(const tSub *menu);
 };
 
+#if (__cplusplus >= 201703L)
 // If possible, use this in the following way, without the size parameter.
 // Note that it should be either constexpr or const so its stored in flash.
 // Prefer constexpr. However, if some of the menu items call functions that are not able to be called from constexpr, then declare it static const instead.
@@ -118,6 +120,7 @@ constexpr std::array<std::remove_cv_t<const tMenu::tItem>, N> MakeMenuItemsEmpty
         {nullptr,	nullptr,	nullptr,	nullptr},
     });
 }
+#endif
 
 inline tMenu::tMenu(tSub* topMenu):
     currentSub_(topMenu)
