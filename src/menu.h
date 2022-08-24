@@ -1,5 +1,9 @@
 #pragma once
 #include <cstdint>
+#include <cstddef>
+#include <array>
+#include <experimental/array>
+#include <typeinfo>
 
 class tMenu {
 public:
@@ -80,6 +84,50 @@ private:
     void Navigate(eButton buttonPress);
     void Draw(const tSub *menu);
 };
+
+// If possible, use this in the following way, without the size parameter.
+// Note that it should be either constexpr or const so its stored in flash.
+// Prefer constexpr. However, if some of the menu items call functions that are not able to be called from constexpr, then declare it static const instead.
+//static constexpr auto MenuItems = MakeMenu (
+//{
+//    {"Item Name", OnExecute, OnDraw, nullptr},
+//    {nullptr,     nullptr,   nullptr,nullptr}
+//});
+template <std::size_t N>
+constexpr std::array<std::remove_cv_t<const tMenu::tItem>, N> MakeMenuItems(const tMenu::tItem (&&a)[N])
+{
+    return std::experimental::__to_array(std::move(a), std::make_index_sequence<N>{});
+}
+
+// Use this to create an empty menu in SRAM that can be dynamically modified as needed.
+template <std::size_t N>
+constexpr std::array<std::remove_cv_t<const tMenu::tItem>, N> MakeMenuItemsEmpty()
+{
+    return MakeMenuItems<N>( {
+        {nullptr,	nullptr,	nullptr,	nullptr},
+    });
+}
+
+template <std::size_t N>
+struct tSubContainer {
+    constexpr tSubContainer(const char* title, const tMenu::tItem (&&a)[N]):
+        sub({title, nullptr}),
+        menuItems(std::experimental::__to_array(std::move(a), std::make_index_sequence<N>{}))
+    {
+        sub.items = menuItems.data();
+    }
+    tMenu::tSub sub;
+    const std::array<std::remove_cv_t<const tMenu::tItem>, N> menuItems;
+};
+
+// template <std::size_t N>
+// constexpr tSubContainer<N> MakeMenu(const char* title, const tMenu::tItem (&&a)[N])
+// {
+//     return tSubContainer<N> (
+//         title,
+//         a
+//     );
+// }
 
 inline tMenu::tMenu(tSub* topMenu):
     currentSub_(topMenu)

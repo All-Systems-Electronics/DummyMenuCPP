@@ -39,17 +39,14 @@ void MainDiagnosticsCounterExpOnExecute(const tMenu::tInfo *info)
 }
 
 static int diagnosticsCounter = 0;
-const tMenu::tItem menuDiagnosticsItems[] = {
+
+tSubContainer menuDiagnostics("Diagnostics",
+{
     {"Counter",  MainDiagnosticsCounterOnExecute, MainDiagnosticsCounterOnDraw, &diagnosticsCounter},
     {"Counter Exp",  MainDiagnosticsCounterExpOnExecute, nullptr, &diagnosticsCounter},
-    {"Inputs",  tMenu::OnExecuteSubMenu, nullptr, reinterpret_cast<void*>(&menuInputs)},
+    {"Inputs",  tMenu::OnExecuteSubMenu, nullptr, static_cast<void*>(&menuInputs)},
     {nullptr}
-};
-
-tMenu::tSub menuDiagnostics = {
-    "Diagnostics",
-    menuDiagnosticsItems
-};
+});
 
 void MenuMainDateOnDraw(const tMenu::tInfo *info)
 {
@@ -77,7 +74,7 @@ void MenuMainVersionOnDraw(const tMenu::tInfo *info)
 const tMenu::tItem menuMainItems[] = {
     {"Date",  nullptr, MenuMainDateOnDraw, nullptr},
     {"Time",  nullptr, MenuMainTimeOnDraw, nullptr},
-    {"Diagnostics",  tMenu::OnExecuteSubMenu, nullptr, (void*)&menuDiagnostics},
+    {"Diagnostics",  tMenu::OnExecuteSubMenu, nullptr, (void*)&menuDiagnostics.sub},
     {"Version", nullptr, MenuMainVersionOnDraw, nullptr},
     {nullptr}
 };
